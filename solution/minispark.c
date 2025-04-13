@@ -8,7 +8,7 @@
 #include <sys/sysinfo.h>
 
 #define _GNU_SOURCE
-#define DEBUG(fmt, ...) fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__)
+#define DEBUG(fmt, ...) /* fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__) */
 
 typedef struct {
     pthread_t* threads;
@@ -49,7 +49,7 @@ static void free_row(struct row* r) {
 }
 
 List* list_init(int initial_capacity) {
-    DEBUG("Creating list with capacity %d", initial_capacity);
+    /* DEBUG("Creating list with capacity %d", initial_capacity); */
     List* l = malloc(sizeof(List));
     l->elements = malloc(initial_capacity * sizeof(void*));
     l->size = 0;
@@ -59,42 +59,42 @@ List* list_init(int initial_capacity) {
 
 void list_add_elem(List* l, void* elem) {
     if (!l) {
-        DEBUG("Attempt to add to NULL list");
+        /* DEBUG("Attempt to add to NULL list"); */
         return;
     }
     if (l->size >= l->capacity) {
-        DEBUG("Resizing list from %d to %d", l->capacity, l->capacity * 2);
+        /* DEBUG("Resizing list from %d to %d", l->capacity, l->capacity * 2); */
         l->capacity *= 2;
         l->elements = realloc(l->elements, l->capacity * sizeof(void*));
     }
-    DEBUG("Adding element %p (list size now %d)", elem, l->size + 1);
+    /* DEBUG("Adding element %p (list size now %d)", elem, l->size + 1); */
     l->elements[l->size++] = elem;
 }
 
 void* list_get_elem(List* l, int index) {
     if (!l) {
-        DEBUG("Attempt to get from NULL list");
+        /* DEBUG("Attempt to get from NULL list"); */
         return NULL;
     }
     if (index < 0 || index >= l->size) {
-        DEBUG("Invalid index %d (size=%d)", index, l->size);
+        /* DEBUG("Invalid index %d (size=%d)", index, l->size); */
         return NULL;
     }
-    DEBUG("Returning element %d: %p", index, l->elements[index]);
+    /* DEBUG("Returning element %d: %p", index, l->elements[index]); */
     return l->elements[index];
 }
 
 void* list_remove_first(List* l) {
     if (!l) {
-        DEBUG("Attempt to remove from NULL list");
+        /* DEBUG("Attempt to remove from NULL list"); */
         return NULL;
     }
     if (l->size == 0) {
-        DEBUG("Attempt to remove from empty list");
+        /* DEBUG("Attempt to remove from empty list"); */
         return NULL;
     }
     void* elem = l->elements[0];
-    DEBUG("Removing first element %p (size was %d)", elem, l->size);
+    /* DEBUG("Removing first element %p (size was %d)", elem, l->size); */
     for (int i = 1; i < l->size; i++) {
         l->elements[i-1] = l->elements[i];
     }
@@ -104,76 +104,76 @@ void* list_remove_first(List* l) {
 
 void list_set_elem(List* l, int index, void* elem) {
     if (!l) {
-        DEBUG("Attempt to set in NULL list");
+        /* DEBUG("Attempt to set in NULL list"); */
         return;
     }
     if (index < 0 || index >= l->capacity) {
-        DEBUG("Invalid index %d (capacity=%d)", index, l->capacity);
+        /* DEBUG("Invalid index %d (capacity=%d)", index, l->capacity); */
         return;
     }
-    DEBUG("Setting element %d to %p (size was %d)", index, elem, l->size);
+    /* DEBUG("Setting element %d to %p (size was %d)", index, elem, l->size); */
     if (index >= l->size) l->size = index + 1;
     l->elements[index] = elem;
 }
 
 int list_size(List* l) {
     if (!l) {
-        DEBUG("NULL list size requested");
+        /* DEBUG("NULL list size requested"); */
         return 0;
     }
-    DEBUG("List size: %d", l->size);
+    /* DEBUG("List size: %d", l->size); */
     return l->size;
 }
 
 void list_free(List* l) {
     if (!l) {
-        DEBUG("Attempt to free NULL list");
+        /* DEBUG("Attempt to free NULL list"); */
         return;
     }
-    DEBUG("Freeing list with %d elements", l->size);
+    /* DEBUG("Freeing list with %d elements", l->size); */
     free(l->elements);
     free(l);
 }
 
 static void* worker_thread(void* arg) {
-    DEBUG("Worker thread starting");
+    /* DEBUG("Worker thread starting"); */
     while (1) {
         pthread_mutex_lock(&thread_pool->queue_lock);
-        DEBUG("Worker acquired queue lock");
+        /* DEBUG("Worker acquired queue lock"); */
         
         while (!thread_pool->shutdown && list_size(thread_pool->work_queue) == 0) {
-            DEBUG("Worker waiting for work");
+            /* DEBUG("Worker waiting for work"); */
             pthread_cond_wait(&thread_pool->queue_cond, &thread_pool->queue_lock);
-            DEBUG("Worker woke up");
+            /* DEBUG("Worker woke up"); */
         }
 
         if (thread_pool->shutdown) {
-            DEBUG("Worker shutting down");
+            /* DEBUG("Worker shutting down"); */
             pthread_mutex_unlock(&thread_pool->queue_lock);
             pthread_exit(NULL);
         }
 
         Task* task = list_remove_first(thread_pool->work_queue);
-        DEBUG("Worker got task for RDD %p partition %d (queue size now %d)", task->rdd, task->pnum, list_size(thread_pool->work_queue));
+        /* DEBUG("Worker got task for RDD %p partition %d (queue size now %d)", task->rdd, task->pnum, list_size(thread_pool->work_queue)); */
         pthread_mutex_unlock(&thread_pool->queue_lock);
 
         clock_gettime(CLOCK_MONOTONIC, &task->metric->scheduled);
-        DEBUG("Task scheduled at %ld.%09ld", task->metric->scheduled.tv_sec, task->metric->scheduled.tv_nsec);
+        /* DEBUG("Task scheduled at %ld.%09ld", task->metric->scheduled.tv_sec, task->metric->scheduled.tv_nsec); */
 
         if (task->rdd && !list_get_elem(task->rdd->partitions, task->pnum)) {
             List* partition = list_init(16);
-            DEBUG("Created new partition %p for RDD %p partition %d", partition, task->rdd, task->pnum);
+            /* DEBUG("Created new partition %p for RDD %p partition %d", partition, task->rdd, task->pnum); */
             list_set_elem(task->rdd->partitions, task->pnum, partition);
 
             if (task->rdd->trans == MAP) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
-                DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
-                      task->rdd, task->pnum, dep, dep_partition);
+                /* DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
+                      task->rdd, task->pnum, dep, dep_partition); */
                 
                 if (dep->trans == FILE_BACKED) {
                     FILE* fp = list_get_elem(dep_partition, 0);
-                    DEBUG("Processing FILE_BACKED partition with FILE* %p", fp);
+                    /* DEBUG("Processing FILE_BACKED partition with FILE* %p", fp); */
                     rewind(fp);
                     char* line = NULL;
                     size_t len = 0;
@@ -188,12 +188,12 @@ static void* worker_thread(void* arg) {
                         //}
                         void* line_copy = strdup(line);
                         if (line_copy) {
-                            DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy);
+                            /* DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy); */
                             list_add_elem(partition, line_copy);
                         }
                     }
                     free(line);
-                    DEBUG("Finished reading file (partition now has %d elements)", list_size(partition));
+                    /* DEBUG("Finished reading file (partition now has %d elements)", list_size(partition)); */
                 } else {
                     // Existing map processing for non-file-backed RDDs
                     for (int i = 0; i < list_size(dep_partition); i++) {
@@ -226,30 +226,30 @@ static void* worker_thread(void* arg) {
             else if (task->rdd->trans == JOIN) {
                 RDD* left_rdd = task->rdd->dependencies[0];
                 RDD* right_rdd = task->rdd->dependencies[1];
-                DEBUG("Processing JOIN on RDD %p partition %d (left RDD %p, right RDD %p)", 
-                      task->rdd, task->pnum, left_rdd, right_rdd);
+                /* DEBUG("Processing JOIN on RDD %p partition %d (left RDD %p, right RDD %p)", 
+                      task->rdd, task->pnum, left_rdd, right_rdd); */
                 
                 List* left_partition = list_get_elem(left_rdd->partitions, task->pnum);
                 List* right_partition = list_get_elem(right_rdd->partitions, task->pnum);
                 
                 if (!left_partition || !right_partition) {
-                    DEBUG("ERROR: Missing input partitions for join (left: %p, right: %p)",
-                          left_partition, right_partition);
+                    /* DEBUG("ERROR: Missing input partitions for join (left: %p, right: %p)",
+                          left_partition, right_partition); */
                     continue;
                 }
                 
                 List* output_partition = list_init(16);
-                DEBUG("Left partition size: %d, Right partition size: %d", 
-                      list_size(left_partition), list_size(right_partition));
+                /* DEBUG("Left partition size: %d, Right partition size: %d", 
+                      list_size(left_partition), list_size(right_partition)); */
 
                 for (int i = 0; i < list_size(left_partition); i++) {
                     void* left_row = list_get_elem(left_partition, i);
-                    DEBUG("Left row %d: %p", i, left_row);
+                    /* DEBUG("Left row %d: %p", i, left_row); */
                     for (int j = 0; j < list_size(right_partition); j++) {
                         void* right_row = list_get_elem(right_partition, j);
-                        DEBUG("Right row %d: %p", j, right_row);
+                        /* DEBUG("Right row %d: %p", j, right_row); */
                         void* joined = ((Joiner)task->rdd->fn)(left_row, right_row, task->rdd->ctx);
-                        DEBUG("Join result: %p", joined);
+                        /* DEBUG("Join result: %p", joined); */
                         if (joined != NULL) {
                             list_add_elem(output_partition, joined);
                         }
@@ -269,7 +269,7 @@ static void* worker_thread(void* arg) {
         struct timespec end_time;
         clock_gettime(CLOCK_MONOTONIC, &end_time);
         task->metric->duration = TIME_DIFF_MICROS(task->metric->scheduled, end_time);
-        DEBUG("Task completed in %ld microseconds", task->metric->duration);
+        /* DEBUG("Task completed in %ld microseconds", task->metric->duration); */
 
         pthread_mutex_lock(&metric_lock);
         list_add_elem(metric_queue, task->metric);
@@ -278,9 +278,9 @@ static void* worker_thread(void* arg) {
 
         pthread_mutex_lock(&thread_pool->active_lock);
         thread_pool->active_tasks--;
-        DEBUG("Active tasks remaining: %d", thread_pool->active_tasks);
+        /* DEBUG("Active tasks remaining: %d", thread_pool->active_tasks); */
         if (thread_pool->active_tasks == 0) {
-            DEBUG("Signaling completion of all tasks");
+            /* DEBUG("Signaling completion of all tasks"); */
             pthread_cond_signal(&thread_pool->active_cond);
         }
         pthread_mutex_unlock(&thread_pool->active_lock);
@@ -291,30 +291,30 @@ static void* worker_thread(void* arg) {
 }
 
 static void* metric_thread_func(void* arg) {
-    DEBUG("Metric thread starting");
+    /* DEBUG("Metric thread starting"); */
     metric_file = fopen("metrics.log", "w");
     if (!metric_file) {
-        DEBUG("Failed to open metrics.log");
+        /* DEBUG("Failed to open metrics.log"); */
         return NULL;
     }
 
     while (1) {
         pthread_mutex_lock(&metric_lock);
-        DEBUG("Metric thread checking queue (size=%d)", list_size(metric_queue));
+        /* DEBUG("Metric thread checking queue (size=%d)", list_size(metric_queue)); */
         while (!thread_pool->shutdown && list_size(metric_queue) == 0) {
-            DEBUG("Metric thread waiting");
+            /* DEBUG("Metric thread waiting"); */
             pthread_cond_wait(&metric_cond, &metric_lock);
-            DEBUG("Metric thread woke up");
+            /* DEBUG("Metric thread woke up"); */
         }
 
         if (thread_pool->shutdown && list_size(metric_queue) == 0) {
-            DEBUG("Metric thread shutting down");
+            /* DEBUG("Metric thread shutting down"); */
             pthread_mutex_unlock(&metric_lock);
             break;
         }
 
         TaskMetric* metric = list_remove_first(metric_queue);
-        DEBUG("Processing metric for RDD %p partition %d", metric->rdd, metric->pnum);
+        /* DEBUG("Processing metric for RDD %p partition %d", metric->rdd, metric->pnum); */
         pthread_mutex_unlock(&metric_lock);
 
         print_formatted_metric(metric, metric_file);
@@ -322,12 +322,12 @@ static void* metric_thread_func(void* arg) {
     }
 
     fclose(metric_file);
-    DEBUG("Metric thread exiting");
+    /* DEBUG("Metric thread exiting"); */
     return NULL;
 }
 
 void print_formatted_metric(TaskMetric* metric, FILE* fp) {
-    DEBUG("Writing metric to file");
+    /* DEBUG("Writing metric to file"); */
     fprintf(fp, "RDD %p Part %d Trans %d -- creation %10jd.%06ld, scheduled %10jd.%06ld, execution (usec) %ld\n",
             metric->rdd, metric->pnum, metric->rdd->trans,
             metric->created.tv_sec, metric->created.tv_nsec / 1000,
@@ -336,9 +336,9 @@ void print_formatted_metric(TaskMetric* metric, FILE* fp) {
 }
 
 void MS_Run() {
-    DEBUG("Initializing MiniSpark");
+    /* DEBUG("Initializing MiniSpark"); */
     int num_threads = get_nprocs();
-    DEBUG("Creating thread pool with %d threads", num_threads);
+    /* DEBUG("Creating thread pool with %d threads", num_threads); */
     
     thread_pool = malloc(sizeof(ThreadPool));
     thread_pool->threads = malloc(num_threads * sizeof(pthread_t));
@@ -352,45 +352,45 @@ void MS_Run() {
     pthread_cond_init(&thread_pool->active_cond, NULL);
 
     for (int i = 0; i < num_threads; i++) {
-        DEBUG("Creating worker thread %d", i);
+        /* DEBUG("Creating worker thread %d", i); */
         pthread_create(&thread_pool->threads[i], NULL, worker_thread, NULL);
     }
 
     metric_queue = list_init(16);
-    DEBUG("Creating metric thread");
+    /* DEBUG("Creating metric thread"); */
     pthread_create(&metric_thread, NULL, metric_thread_func, NULL);
-    DEBUG("MiniSpark initialization complete");
+    /* DEBUG("MiniSpark initialization complete"); */
 }
 
 void MS_TearDown() {
     if (!thread_pool) {
-        DEBUG("Thread pool already NULL");
+        /* DEBUG("Thread pool already NULL"); */
         return;
     }
 
-    DEBUG("Initiating shutdown sequence");
+    /* DEBUG("Initiating shutdown sequence"); */
     
     pthread_mutex_lock(&thread_pool->queue_lock);
     thread_pool->shutdown = 1;
-    DEBUG("Broadcasting shutdown to workers");
+    /* DEBUG("Broadcasting shutdown to workers"); */
     pthread_cond_broadcast(&thread_pool->queue_cond);
     pthread_mutex_unlock(&thread_pool->queue_lock);
 
     pthread_mutex_lock(&metric_lock);
-    DEBUG("Signaling metric thread to shutdown");
+    /* DEBUG("Signaling metric thread to shutdown"); */
     pthread_cond_signal(&metric_cond);
     pthread_mutex_unlock(&metric_lock);
 
-    DEBUG("Joining worker threads");
+    /* DEBUG("Joining worker threads"); */
     for (int i = 0; i < thread_pool->num_threads; i++) {
-        DEBUG("Joining worker thread %d", i);
+        /* DEBUG("Joining worker thread %d", i); */
         pthread_join(thread_pool->threads[i], NULL);
     }
 
-    DEBUG("Joining metric thread");
+    /* DEBUG("Joining metric thread"); */
     pthread_join(metric_thread, NULL);
 
-    DEBUG("Cleaning up resources");
+    /* DEBUG("Cleaning up resources"); */
     list_free(thread_pool->work_queue);
     free(thread_pool->threads);
     pthread_mutex_destroy(&thread_pool->queue_lock);
@@ -406,15 +406,15 @@ void MS_TearDown() {
     list_free(metric_queue);
     metric_queue = NULL;
     
-    DEBUG("Shutdown complete");
+    /* DEBUG("Shutdown complete"); */
 }
 
 void execute(RDD* rdd) {
-    DEBUG("Executing RDD %p (transformation %d)", rdd, rdd->trans);
+    /* DEBUG("Executing RDD %p (transformation %d)", rdd, rdd->trans); */
     if (!rdd) return;
 
     for (int i = 0; i < rdd->numdependencies; i++) {
-        DEBUG("Materializing dependency %d for RDD %p", i, rdd);
+        /* DEBUG("Materializing dependency %d for RDD %p", i, rdd); */
         execute(rdd->dependencies[i]);
     }
 
@@ -422,8 +422,8 @@ void execute(RDD* rdd) {
         RDD* left = rdd->dependencies[0];
         RDD* right = rdd->dependencies[1];
         if (list_size(left->partitions) != list_size(right->partitions)) {
-            DEBUG("JOIN ERROR: Partition count mismatch (%d vs %d)", 
-                  list_size(left->partitions), list_size(right->partitions));
+            /* DEBUG("JOIN ERROR: Partition count mismatch (%d vs %d)", 
+                  list_size(left->partitions), list_size(right->partitions)); */
             return;
         }
     }
@@ -438,17 +438,17 @@ void execute(RDD* rdd) {
             num_partitions = list_size(rdd->dependencies[0]->partitions);
         }
 
-        DEBUG("Creating %d partitions for RDD %p", num_partitions, rdd);
+        /* DEBUG("Creating %d partitions for RDD %p", num_partitions, rdd); */
         rdd->partitions = list_init(num_partitions);
         for (int i = 0; i < num_partitions; i++) {
             list_add_elem(rdd->partitions, NULL);
-            DEBUG("Added partition %d (size now %d)", i, list_size(rdd->partitions));
+            /* DEBUG("Added partition %d (size now %d)", i, list_size(rdd->partitions)); */
         }
     }
 
     pthread_mutex_lock(&thread_pool->active_lock);
     thread_pool->active_tasks = list_size(rdd->partitions);
-    DEBUG("Set active tasks to %d for RDD %p", thread_pool->active_tasks, rdd);
+    /* DEBUG("Set active tasks to %d for RDD %p", thread_pool->active_tasks, rdd); */
     pthread_mutex_unlock(&thread_pool->active_lock);
 
     for (int i = 0; i < list_size(rdd->partitions); i++) {
@@ -462,61 +462,65 @@ void execute(RDD* rdd) {
 
         pthread_mutex_lock(&thread_pool->queue_lock);
         list_add_elem(thread_pool->work_queue, task);
-        DEBUG("Added task for partition %d (queue size now %d)", i, list_size(thread_pool->work_queue));
+        /* DEBUG("Added task for partition %d (queue size now %d)", i, list_size(thread_pool->work_queue)); */
         pthread_cond_signal(&thread_pool->queue_cond);
         pthread_mutex_unlock(&thread_pool->queue_lock);
     }
 
     pthread_mutex_lock(&thread_pool->active_lock);
     while (thread_pool->active_tasks > 0) {
-        DEBUG("Waiting for %d tasks to complete for RDD %p", thread_pool->active_tasks, rdd);
+        /* DEBUG("Waiting for %d tasks to complete for RDD %p", thread_pool->active_tasks, rdd); */
         pthread_cond_wait(&thread_pool->active_cond, &thread_pool->active_lock);
     }
     pthread_mutex_unlock(&thread_pool->active_lock);
-    DEBUG("All tasks completed for RDD %p", rdd);
+    /* DEBUG("All tasks completed for RDD %p", rdd); */
 }
 
 int count(RDD* rdd) {
-    DEBUG("Counting elements in RDD %p", rdd);
+    /* DEBUG("Counting elements in RDD %p", rdd); */
     execute(rdd);
     int count = 0;
     for (int i = 0; i < list_size(rdd->partitions); i++) {
         List* partition = list_get_elem(rdd->partitions, i);
         count += list_size(partition);
-        DEBUG("Partition %d has %d elements (total now %d)", i, list_size(partition), count);
+        /* DEBUG("Partition %d has %d elements (total now %d)", i, list_size(partition), count); */
     }
-    DEBUG("Final count for RDD %p: %d", rdd, count);
+    /* DEBUG("Final count for RDD %p: %d", rdd, count); */
     return count;
 }
 
 void print(RDD* rdd, Printer p) {
-    DEBUG("Printing RDD %p", rdd);
+    /* DEBUG("Printing RDD %p", rdd); */
     execute(rdd);
     
     if (!rdd->partitions) {
-        DEBUG("No partitions to print");
+        /* DEBUG("No partitions to print"); */
         return;
     }
 
     // Track if we need to add newlines (for string output)
     int is_string_output = (rdd->trans == MAP && rdd->dependencies[0]->trans == FILE_BACKED);
+    int is_filter = rdd->trans == FILTER;
 
     for (int i = 0; i < list_size(rdd->partitions); i++) {
         List* partition = list_get_elem(rdd->partitions, i);
         if (!partition) {
-            DEBUG("Partition %d is NULL", i);
+            /* DEBUG("Partition %d is NULL", i); */
             continue;
         }
         
-        DEBUG("Printing partition %d with %d elements", i, list_size(partition));
+        /* DEBUG("Printing partition %d with %d elements", i, list_size(partition)); */
              
         for (int j = 0; j < list_size(partition); j++) {
             void* elem = list_get_elem(partition, j);
             if (elem) {
-                DEBUG("Printing element %p", elem);
+                /* DEBUG("Printing element %p", elem); */
                 p(elem);
                 // Only add newline for simple string output
                 if (is_string_output) {
+                    printf("\n");
+                }
+                if(is_filter){
                     printf("\n");
                 }
                 free(elem);
@@ -526,11 +530,11 @@ void print(RDD* rdd, Printer p) {
     }
     list_free(rdd->partitions);
     rdd->partitions = NULL;
-    DEBUG("Finished printing RDD %p", rdd);
+    /* DEBUG("Finished printing RDD %p", rdd); */
 }
 
 RDD* create_rdd(int numdeps, Transform t, void* fn, ...) {
-    DEBUG("Creating RDD with %d dependencies, transform %d", numdeps, t);
+    /* DEBUG("Creating RDD with %d dependencies, transform %d", numdeps, t); */
     RDD* rdd = malloc(sizeof(RDD));
     memset(rdd, 0, sizeof(RDD));
     rdd->trans = t;
@@ -540,28 +544,28 @@ RDD* create_rdd(int numdeps, Transform t, void* fn, ...) {
     va_start(args, fn);
     for (int i = 0; i < numdeps; i++) {
         rdd->dependencies[i] = va_arg(args, RDD*);
-        DEBUG("Added dependency %d: RDD %p", i, rdd->dependencies[i]);
+        /* DEBUG("Added dependency %d: RDD %p", i, rdd->dependencies[i]); */
     }
     va_end(args);
     rdd->numdependencies = numdeps;
-    DEBUG("Created RDD %p", rdd);
+    /* DEBUG("Created RDD %p", rdd); */
     return rdd;
 }
 
 RDD* map(RDD* dep, Mapper fn) {
-    DEBUG("Creating MAP RDD from %p", dep);
+    /* DEBUG("Creating MAP RDD from %p", dep); */
     return create_rdd(1, MAP, fn, dep);
 }
 
 RDD* filter(RDD* dep, Filter fn, void* ctx) {
-    DEBUG("Creating FILTER RDD from %p", dep);
+    /* DEBUG("Creating FILTER RDD from %p", dep); */
     RDD* rdd = create_rdd(1, FILTER, fn, dep);
     rdd->ctx = ctx;
     return rdd;
 }
 
 RDD* partitionBy(RDD* dep, Partitioner fn, int numpartitions, void* ctx) {
-    DEBUG("Creating PARTITIONBY RDD from %p (%d partitions)", dep, numpartitions);
+    /* DEBUG("Creating PARTITIONBY RDD from %p (%d partitions)", dep, numpartitions); */
     RDD* rdd = create_rdd(1, PARTITIONBY, fn, dep);
     rdd->numpartitions = numpartitions;
     rdd->ctx = ctx;
@@ -569,19 +573,19 @@ RDD* partitionBy(RDD* dep, Partitioner fn, int numpartitions, void* ctx) {
 }
 
 RDD* join(RDD* dep1, RDD* dep2, Joiner fn, void* ctx) {
-    DEBUG("Creating JOIN RDD from %p and %p", dep1, dep2);
+    /* DEBUG("Creating JOIN RDD from %p and %p", dep1, dep2); */
     RDD* rdd = create_rdd(2, JOIN, fn, dep1, dep2);
     rdd->ctx = ctx;
     return rdd;
 }
 
 void* identity(void* arg) {
-    DEBUG("Identity function called with %p", arg);
+    /* DEBUG("Identity function called with %p", arg); */
     return arg;
 }
 
 RDD* RDDFromFiles(char** filenames, int numfiles) {
-    DEBUG("Creating FILE_BACKED RDD from %d files", numfiles);
+    /* DEBUG("Creating FILE_BACKED RDD from %d files", numfiles); */
     RDD* rdd = malloc(sizeof(RDD));
     memset(rdd, 0, sizeof(RDD));
     rdd->partitions = list_init(numfiles);
@@ -589,7 +593,7 @@ RDD* RDDFromFiles(char** filenames, int numfiles) {
     rdd->fn = (void*)identity;
 
     for (int i = 0; i < numfiles; i++) {
-        DEBUG("Opening file %s", filenames[i]);
+        /* DEBUG("Opening file %s", filenames[i]); */
         FILE* fp = fopen(filenames[i], "r");
         if (!fp) {
             perror("fopen");
@@ -608,8 +612,8 @@ RDD* RDDFromFiles(char** filenames, int numfiles) {
         List* partition = list_init(1);
         list_add_elem(partition, fp);
         list_set_elem(rdd->partitions, i, partition);
-        DEBUG("Added file %s as partition %d", filenames[i], i);
+        /* DEBUG("Added file %s as partition %d", filenames[i], i); */
     }
-    DEBUG("Created FILE_BACKED RDD %p with %d partitions", rdd, numfiles);
+    /* DEBUG("Created FILE_BACKED RDD %p with %d partitions", rdd, numfiles); */
     return rdd;
 }
