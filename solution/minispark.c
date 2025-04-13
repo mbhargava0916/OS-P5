@@ -48,7 +48,6 @@ static void free_row(struct row* r) {
     free(r);  
 }
 
-
 List* list_init(int initial_capacity) {
     DEBUG("Creating list with capacity %d", initial_capacity);
     List* l = malloc(sizeof(List));
@@ -169,7 +168,8 @@ static void* worker_thread(void* arg) {
             if (task->rdd->trans == MAP) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
-                DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", task->rdd, task->pnum, dep, dep_partition);
+                DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
+                      task->rdd, task->pnum, dep, dep_partition);
                 
                 if (dep->trans == FILE_BACKED) {
                     FILE* fp = list_get_elem(dep_partition, 0);
@@ -178,18 +178,31 @@ static void* worker_thread(void* arg) {
                     char* line = NULL;
                     size_t len = 0;
                     ssize_t read;
+                    
                     while ((read = getline(&line, &len, fp)) != -1) {
-                        //line[strcspn(line, "\n")] = 0;
-                        DEBUG("Read line: %s", line);
-                        line[strcspn(line, "\n")] = 0; 
+                        // Remove newline and ensure proper tab separation
+                        line[strcspn(line, "\n")] = 0;
+                        // Replace spaces with tabs to ensure consistent splitting
+                        //for (char* p = line; *p; p++) {
+                          //  if (*p == ' ') *p = '\t';
+                        //}
                         void* line_copy = strdup(line);
                         if (line_copy) {
-                            DEBUG("Adding line copy %p to partition", line_copy);
+                            DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy);
                             list_add_elem(partition, line_copy);
                         }
                     }
                     free(line);
                     DEBUG("Finished reading file (partition now has %d elements)", list_size(partition));
+                } else {
+                    // Existing map processing for non-file-backed RDDs
+                    for (int i = 0; i < list_size(dep_partition); i++) {
+                        void* elem = list_get_elem(dep_partition, i);
+                        void* mapped = ((Mapper)task->rdd->fn)(elem);
+                        if (mapped) {
+                            list_add_elem(partition, mapped);
+                        }
+                    }
                 }
             }else if (task->rdd->trans == FILTER) {
                 RDD* dep = task->rdd->dependencies[0];
@@ -199,7 +212,6 @@ static void* worker_thread(void* arg) {
                 for (int i = 0; i < list_size(dep_partition); i++) {
                     void* elem = list_get_elem(dep_partition, i);
             
-                    // Special handling for StringContains filter: strip newline
                     if (task->rdd->fn == StringContains && elem != NULL) {
                         ((char*)elem)[strcspn((char*)elem, "\n")] = 0;
                     }
@@ -210,31 +222,48 @@ static void* worker_thread(void* arg) {
                 }
             
                 list_set_elem(task->rdd->partitions, task->pnum, partition);
-            } else if (task->rdd->trans == JOIN) {
+            } 
+            else if (task->rdd->trans == JOIN) {
                 RDD* left_rdd = task->rdd->dependencies[0];
                 RDD* right_rdd = task->rdd->dependencies[1];
-            
+                DEBUG("Processing JOIN on RDD %p partition %d (left RDD %p, right RDD %p)", 
+                      task->rdd, task->pnum, left_rdd, right_rdd);
+                
                 List* left_partition = list_get_elem(left_rdd->partitions, task->pnum);
                 List* right_partition = list_get_elem(right_rdd->partitions, task->pnum);
-                List* output_partition = list_get_elem(task->rdd->partitions, task->pnum);
-            
-                int left_size = list_size(left_partition);
-                int right_size = list_size(right_partition);
-            
-                for (int i = 0; i < left_size; i++) {
-                    void* row1 = list_get_elem(left_partition, i);
-                    for (int j = 0; j < right_size; j++) {
-                        void* row2 = list_get_elem(right_partition, j);
-            
-                        void* joined = task->rdd->fn(row1, row2, task->rdd->ctx);
+                
+                if (!left_partition || !right_partition) {
+                    DEBUG("ERROR: Missing input partitions for join (left: %p, right: %p)",
+                          left_partition, right_partition);
+                    continue;
+                }
+                
+                List* output_partition = list_init(16);
+                DEBUG("Left partition size: %d, Right partition size: %d", 
+                      list_size(left_partition), list_size(right_partition));
+
+                for (int i = 0; i < list_size(left_partition); i++) {
+                    void* left_row = list_get_elem(left_partition, i);
+                    DEBUG("Left row %d: %p", i, left_row);
+                    for (int j = 0; j < list_size(right_partition); j++) {
+                        void* right_row = list_get_elem(right_partition, j);
+                        DEBUG("Right row %d: %p", j, right_row);
+                        void* joined = ((Joiner)task->rdd->fn)(left_row, right_row, task->rdd->ctx);
+                        DEBUG("Join result: %p", joined);
                         if (joined != NULL) {
                             list_add_elem(output_partition, joined);
                         }
                     }
                 }
+                
+                list_set_elem(task->rdd->partitions, task->pnum, output_partition);
+                
+                // Free input partitions as per project requirements
+                list_free(left_partition);
+                list_free(right_partition);
+                list_set_elem(left_rdd->partitions, task->pnum, NULL);
+                list_set_elem(right_rdd->partitions, task->pnum, NULL);
             }
-            
-            //             
         }
 
         struct timespec end_time;
@@ -341,14 +370,12 @@ void MS_TearDown() {
 
     DEBUG("Initiating shutdown sequence");
     
-    // First signal worker threads to shutdown
     pthread_mutex_lock(&thread_pool->queue_lock);
     thread_pool->shutdown = 1;
     DEBUG("Broadcasting shutdown to workers");
     pthread_cond_broadcast(&thread_pool->queue_cond);
     pthread_mutex_unlock(&thread_pool->queue_lock);
 
-    // Then signal metric thread
     pthread_mutex_lock(&metric_lock);
     DEBUG("Signaling metric thread to shutdown");
     pthread_cond_signal(&metric_cond);
@@ -384,37 +411,47 @@ void MS_TearDown() {
 
 void execute(RDD* rdd) {
     DEBUG("Executing RDD %p (transformation %d)", rdd, rdd->trans);
+    if (!rdd) return;
 
-    // Step 1: Materialize all dependencies recursively
     for (int i = 0; i < rdd->numdependencies; i++) {
+        DEBUG("Materializing dependency %d for RDD %p", i, rdd);
         execute(rdd->dependencies[i]);
     }
 
-    if (!rdd->partitions) {
-        int num_partitions = rdd->numdependencies > 0 ?
-            list_size(rdd->dependencies[0]->partitions) : 1;
-    
-        DEBUG("Creating %d partitions for RDD %p", num_partitions, rdd);
-        rdd->partitions = list_init(num_partitions);
-        for (int i = 0; i < num_partitions; i++) {
-            list_add_elem(rdd->partitions, NULL);  // Pre-fill to set .size
-            DEBUG("Just added partition %d, current size: %d", i, list_size(rdd->partitions));
+    if (rdd->trans == JOIN && rdd->numdependencies == 2) {
+        RDD* left = rdd->dependencies[0];
+        RDD* right = rdd->dependencies[1];
+        if (list_size(left->partitions) != list_size(right->partitions)) {
+            DEBUG("JOIN ERROR: Partition count mismatch (%d vs %d)", 
+                  list_size(left->partitions), list_size(right->partitions));
+            return;
         }
     }
 
-    DEBUG("Post-fill, rdd->partitions size = %d", list_size(rdd->partitions));
+    if (!rdd->partitions) {
+        int num_partitions = 1;
+        
+        if (rdd->trans == PARTITIONBY) {
+            num_partitions = rdd->numpartitions;
+        } 
+        else if (rdd->numdependencies > 0) {
+            num_partitions = list_size(rdd->dependencies[0]->partitions);
+        }
 
-    // Step 3: Launch task for each partition
-    int partitions_to_process = list_size(rdd->partitions);
-    DEBUG("Partitions list size is %d", list_size(rdd->partitions));
-    DEBUG("Need to process %d partitions", partitions_to_process);
+        DEBUG("Creating %d partitions for RDD %p", num_partitions, rdd);
+        rdd->partitions = list_init(num_partitions);
+        for (int i = 0; i < num_partitions; i++) {
+            list_add_elem(rdd->partitions, NULL);
+            DEBUG("Added partition %d (size now %d)", i, list_size(rdd->partitions));
+        }
+    }
 
     pthread_mutex_lock(&thread_pool->active_lock);
-    thread_pool->active_tasks = partitions_to_process;
-    DEBUG("Set active tasks to %d", thread_pool->active_tasks);
+    thread_pool->active_tasks = list_size(rdd->partitions);
+    DEBUG("Set active tasks to %d for RDD %p", thread_pool->active_tasks, rdd);
     pthread_mutex_unlock(&thread_pool->active_lock);
 
-    for (int i = 0; i < partitions_to_process; i++) {
+    for (int i = 0; i < list_size(rdd->partitions); i++) {
         Task* task = malloc(sizeof(Task));
         task->rdd = rdd;
         task->pnum = i;
@@ -430,16 +467,14 @@ void execute(RDD* rdd) {
         pthread_mutex_unlock(&thread_pool->queue_lock);
     }
 
-    // Step 4: Wait for all tasks to complete
     pthread_mutex_lock(&thread_pool->active_lock);
     while (thread_pool->active_tasks > 0) {
-        DEBUG("Waiting for %d tasks to complete", thread_pool->active_tasks);
+        DEBUG("Waiting for %d tasks to complete for RDD %p", thread_pool->active_tasks, rdd);
         pthread_cond_wait(&thread_pool->active_cond, &thread_pool->active_lock);
     }
     pthread_mutex_unlock(&thread_pool->active_lock);
     DEBUG("All tasks completed for RDD %p", rdd);
 }
-
 
 int count(RDD* rdd) {
     DEBUG("Counting elements in RDD %p", rdd);
@@ -463,6 +498,9 @@ void print(RDD* rdd, Printer p) {
         return;
     }
 
+    // Track if we need to add newlines (for string output)
+    int is_string_output = (rdd->trans == MAP && rdd->dependencies[0]->trans == FILE_BACKED);
+
     for (int i = 0; i < list_size(rdd->partitions); i++) {
         List* partition = list_get_elem(rdd->partitions, i);
         if (!partition) {
@@ -477,7 +515,10 @@ void print(RDD* rdd, Printer p) {
             if (elem) {
                 DEBUG("Printing element %p", elem);
                 p(elem);
-                printf("\n");
+                // Only add newline for simple string output
+                if (is_string_output) {
+                    printf("\n");
+                }
                 free(elem);
             }
         }

@@ -1,0 +1,566 @@
+[MS_Run:339] Initializing MiniSpark
+[MS_Run:341] Creating thread pool with 12 threads
+[list_init:52] Creating list with capacity 16
+[MS_Run:355] Creating worker thread 0
+[MS_Run:355] Creating worker thread 1
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 2
+[MS_Run:355] Creating worker thread 3
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 4
+[MS_Run:355] Creating worker thread 5
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 6
+[MS_Run:355] Creating worker thread 7
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 8
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 9
+[MS_Run:355] Creating worker thread 10
+[worker_thread:139] Worker thread starting
+[worker_thread:142] Worker acquired queue lock
+[worker_thread:139] Worker thread starting
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:355] Creating worker thread 11
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_init:52] Creating list with capacity 16
+[MS_Run:360] Creating metric thread
+[worker_thread:139] Worker thread starting
+[metric_thread_func:294] Metric thread starting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[MS_Run:362] MiniSpark initialization complete
+[RDDFromFiles:580] Creating FILE_BACKED RDD from 3 files
+[list_init:52] Creating list with capacity 3
+[RDDFromFiles:588] Opening file ./test_files/one.txt
+[list_init:52] Creating list with capacity 1
+[list_add_elem:70] Adding element 0x561c95541470 (list size now 1)
+[list_set_elem:114] Setting element 0 to 0x561c95541650 (size was 0)
+[RDDFromFiles:607] Added file ./test_files/one.txt as partition 0
+[RDDFromFiles:588] Opening file ./test_files/two.txt
+[list_init:52] Creating list with capacity 1
+[list_add_elem:70] Adding element 0x561c95541690 (list size now 1)
+[list_set_elem:114] Setting element 1 to 0x561c95541870 (size was 1)
+[RDDFromFiles:607] Added file ./test_files/two.txt as partition 1
+[RDDFromFiles:588] Opening file ./test_files/three.txt
+[list_init:52] Creating list with capacity 1
+[list_add_elem:70] Adding element 0x561c955418b0 (list size now 1)
+[list_set_elem:114] Setting element 2 to 0x561c95541a90 (size was 2)
+[RDDFromFiles:607] Added file ./test_files/three.txt as partition 2
+[RDDFromFiles:609] Created FILE_BACKED RDD 0x561c955413f0 with 3 partitions
+[map:548] Creating MAP RDD from 0x561c955413f0
+[create_rdd:529] Creating RDD with 1 dependencies, transform 0
+[create_rdd:539] Added dependency 0: RDD 0x561c955413f0
+[create_rdd:543] Created RDD 0x561c95541ad0
+[filter:553] Creating FILTER RDD from 0x561c95541ad0
+[create_rdd:529] Creating RDD with 1 dependencies, transform 1
+[create_rdd:539] Added dependency 0: RDD 0x561c95541ad0
+[create_rdd:543] Created RDD 0x561c95541b10
+[print:493] Printing RDD 0x561c95541b10
+[execute:413] Executing RDD 0x561c95541b10 (transformation 1)
+[execute:417] Materializing dependency 0 for RDD 0x561c95541b10
+[execute:413] Executing RDD 0x561c95541ad0 (transformation 0)
+[execute:417] Materializing dependency 0 for RDD 0x561c95541ad0
+[execute:413] Executing RDD 0x561c955413f0 (transformation 4)
+[list_size:124] List size: 3
+[execute:451] Set active tasks to 3 for RDD 0x561c955413f0
+[list_size:124] List size: 3
+[list_add_elem:70] Adding element 0x561c95541b50 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 0 (queue size now 1)
+[list_size:124] List size: 3
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541b50 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c955413f0 partition 0 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.819366276
+[list_get_elem:83] Returning element 0: 0x561c95541650
+[worker_thread:272] Task completed in 14 microseconds
+[list_add_elem:70] Adding element 0x561c95541b70 (list size now 1)
+[worker_thread:281] Active tasks remaining: 2
+[list_add_elem:70] Adding element 0x561c95541bb0 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 1 (queue size now 1)
+[list_size:124] List size: 1
+[metric_thread_func:303] Metric thread checking queue (size=1)
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541b70 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c955413f0 partition 0
+[print_formatted_metric:330] Writing metric to file
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541bb0 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c955413f0 partition 1 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.819548893
+[list_get_elem:83] Returning element 1: 0x561c95541870
+[worker_thread:272] Task completed in 10 microseconds
+[list_size:124] List size: 3
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_add_elem:70] Adding element 0x561c95541bd0 (list size now 1)
+[worker_thread:281] Active tasks remaining: 1
+[list_add_elem:70] Adding element 0x561c95541c10 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 2 (queue size now 1)
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541bd0 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c955413f0 partition 1
+[print_formatted_metric:330] Writing metric to file
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[list_size:124] List size: 3
+[execute:472] Waiting for 1 tasks to complete for RDD 0x561c955413f0
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541c10 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c955413f0 partition 2 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.819986023
+[list_get_elem:83] Returning element 2: 0x561c95541a90
+[worker_thread:272] Task completed in 21 microseconds
+[list_add_elem:70] Adding element 0x561c95541c30 (list size now 1)
+[worker_thread:281] Active tasks remaining: 0
+[worker_thread:283] Signaling completion of all tasks
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541c30 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c955413f0 partition 2
+[print_formatted_metric:330] Writing metric to file
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[execute:476] All tasks completed for RDD 0x561c955413f0
+[list_size:124] List size: 3
+[execute:441] Creating 3 partitions for RDD 0x561c95541ad0
+[list_init:52] Creating list with capacity 3
+[list_add_elem:70] Adding element (nil) (list size now 1)
+[list_size:124] List size: 1
+[execute:445] Added partition 0 (size now 1)
+[list_add_elem:70] Adding element (nil) (list size now 2)
+[list_size:124] List size: 2
+[execute:445] Added partition 1 (size now 2)
+[list_add_elem:70] Adding element (nil) (list size now 3)
+[list_size:124] List size: 3
+[execute:445] Added partition 2 (size now 3)
+[list_size:124] List size: 3
+[execute:451] Set active tasks to 3 for RDD 0x561c95541ad0
+[list_size:124] List size: 3
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[list_add_elem:70] Adding element 0x561c95541cb0 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 0 (queue size now 1)
+[list_size:124] List size: 3
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541cb0 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541ad0 partition 0 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.820397084
+[list_get_elem:83] Returning element 0: (nil)
+[list_init:52] Creating list with capacity 16
+[list_add_elem:70] Adding element 0x561c95541d10 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 1 (queue size now 1)
+[list_size:124] List size: 3
+[worker_thread:165] Created new partition 0x7f2b28000b70 for RDD 0x561c95541ad0 partition 0
+[list_set_elem:114] Setting element 0 to 0x7f2b28000b70 (size was 3)
+[list_get_elem:83] Returning element 0: 0x561c95541650
+[worker_thread:171] Processing MAP on RDD 0x561c95541ad0 partition 0 (dep RDD 0x561c955413f0 partition 0x561c95541650)
+[list_get_elem:83] Returning element 0: 0x561c95541470
+[worker_thread:176] Processing FILE_BACKED partition with FILE* 0x561c95541470
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541d10 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541ad0 partition 1 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.820530384
+[list_get_elem:83] Returning element 1: (nil)
+[list_init:52] Creating list with capacity 16
+[worker_thread:191] Adding line copy 0x7f2b28001cb0: one
+[worker_thread:165] Created new partition 0x7f2b1c000b70 for RDD 0x561c95541ad0 partition 1
+[list_set_elem:114] Setting element 1 to 0x7f2b1c000b70 (size was 3)
+[list_get_elem:83] Returning element 1: 0x561c95541870
+[worker_thread:171] Processing MAP on RDD 0x561c95541ad0 partition 1 (dep RDD 0x561c955413f0 partition 0x561c95541870)
+[list_get_elem:83] Returning element 0: 0x561c95541690
+[worker_thread:176] Processing FILE_BACKED partition with FILE* 0x561c95541690
+[list_add_elem:70] Adding element 0x561c95541d70 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 2 (queue size now 1)
+[list_size:124] List size: 3
+[execute:472] Waiting for 3 tasks to complete for RDD 0x561c95541ad0
+[list_add_elem:70] Adding element 0x7f2b28001cb0 (list size now 1)
+[worker_thread:191] Adding line copy 0x7f2b28001cd0: two
+[list_add_elem:70] Adding element 0x7f2b28001cd0 (list size now 2)
+[worker_thread:191] Adding line copy 0x7f2b28001cf0: three
+[list_add_elem:70] Adding element 0x7f2b28001cf0 (list size now 3)
+[list_size:124] List size: 3
+[worker_thread:196] Finished reading file (partition now has 3 elements)
+[worker_thread:272] Task completed in 288 microseconds
+[list_add_elem:70] Adding element 0x561c95541cd0 (list size now 1)
+[worker_thread:281] Active tasks remaining: 2
+[worker_thread:191] Adding line copy 0x7f2b1c001cb0: one
+[list_add_elem:70] Adding element 0x7f2b1c001cb0 (list size now 1)
+[worker_thread:191] Adding line copy 0x7f2b1c001cd0: two
+[list_add_elem:70] Adding element 0x7f2b1c001cd0 (list size now 2)
+[worker_thread:191] Adding line copy 0x7f2b1c001cf0: three
+[list_add_elem:70] Adding element 0x7f2b1c001cf0 (list size now 3)
+[worker_thread:191] Adding line copy 0x7f2b1c001d10: four
+[list_add_elem:70] Adding element 0x7f2b1c001d10 (list size now 4)
+[worker_thread:191] Adding line copy 0x7f2b1c001d30: five
+[list_add_elem:70] Adding element 0x7f2b1c001d30 (list size now 5)
+[worker_thread:191] Adding line copy 0x7f2b1c001d50: one
+[list_add_elem:70] Adding element 0x7f2b1c001d50 (list size now 6)
+[worker_thread:191] Adding line copy 0x7f2b1c001d70: extra	text	one
+[list_add_elem:70] Adding element 0x7f2b1c001d70 (list size now 7)
+[list_size:124] List size: 7
+[worker_thread:196] Finished reading file (partition now has 7 elements)
+[worker_thread:272] Task completed in 284 microseconds
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541d70 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541ad0 partition 2 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.820870344
+[list_get_elem:83] Returning element 2: (nil)
+[list_init:52] Creating list with capacity 16
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541cd0 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541ad0 partition 0
+[print_formatted_metric:330] Writing metric to file
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:165] Created new partition 0x7f2b20000b70 for RDD 0x561c95541ad0 partition 2
+[list_set_elem:114] Setting element 2 to 0x7f2b20000b70 (size was 3)
+[list_get_elem:83] Returning element 2: 0x561c95541a90
+[worker_thread:171] Processing MAP on RDD 0x561c95541ad0 partition 2 (dep RDD 0x561c955413f0 partition 0x561c95541a90)
+[list_get_elem:83] Returning element 0: 0x561c955418b0
+[worker_thread:176] Processing FILE_BACKED partition with FILE* 0x561c955418b0
+[list_add_elem:70] Adding element 0x561c95541d30 (list size now 1)
+[worker_thread:191] Adding line copy 0x7f2b20001cb0: one
+[list_add_elem:70] Adding element 0x7f2b20001cb0 (list size now 1)
+[worker_thread:191] Adding line copy 0x7f2b20001cd0: two
+[list_add_elem:70] Adding element 0x7f2b20001cd0 (list size now 2)
+[worker_thread:191] Adding line copy 0x7f2b20001cf0: three	four	five
+[list_add_elem:70] Adding element 0x7f2b20001cf0 (list size now 3)
+[worker_thread:191] Adding line copy 0x7f2b20001d10: six
+[list_add_elem:70] Adding element 0x7f2b20001d10 (list size now 4)
+[worker_thread:191] Adding line copy 0x7f2b20001d30: 
+[list_add_elem:70] Adding element 0x7f2b20001d30 (list size now 5)
+[list_size:124] List size: 5
+[worker_thread:196] Finished reading file (partition now has 5 elements)
+[worker_thread:272] Task completed in 262 microseconds
+[worker_thread:281] Active tasks remaining: 1
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_size:124] List size: 1
+[metric_thread_func:303] Metric thread checking queue (size=1)
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541d30 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541ad0 partition 1
+[print_formatted_metric:330] Writing metric to file
+[list_add_elem:70] Adding element 0x561c95541d90 (list size now 1)
+[worker_thread:281] Active tasks remaining: 0
+[worker_thread:283] Signaling completion of all tasks
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_size:124] List size: 1
+[metric_thread_func:303] Metric thread checking queue (size=1)
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541d90 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541ad0 partition 2
+[print_formatted_metric:330] Writing metric to file
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[execute:476] All tasks completed for RDD 0x561c95541ad0
+[list_size:124] List size: 3
+[execute:441] Creating 3 partitions for RDD 0x561c95541b10
+[list_init:52] Creating list with capacity 3
+[list_add_elem:70] Adding element (nil) (list size now 1)
+[list_size:124] List size: 1
+[execute:445] Added partition 0 (size now 1)
+[list_add_elem:70] Adding element (nil) (list size now 2)
+[list_size:124] List size: 2
+[execute:445] Added partition 1 (size now 2)
+[list_add_elem:70] Adding element (nil) (list size now 3)
+[list_size:124] List size: 3
+[execute:445] Added partition 2 (size now 3)
+[list_size:124] List size: 3
+[execute:451] Set active tasks to 3 for RDD 0x561c95541b10
+[list_size:124] List size: 3
+[list_add_elem:70] Adding element 0x561c95541e10 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 0 (queue size now 1)
+[list_size:124] List size: 3
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541e10 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541b10 partition 0 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.821647980
+[list_get_elem:83] Returning element 0: (nil)
+[list_init:52] Creating list with capacity 16
+[list_add_elem:70] Adding element 0x561c95541e70 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 1 (queue size now 1)
+[worker_thread:165] Created new partition 0x7f2b14000b70 for RDD 0x561c95541b10 partition 0
+[list_set_elem:114] Setting element 0 to 0x7f2b14000b70 (size was 3)
+[list_get_elem:83] Returning element 0: 0x7f2b28000b70
+[list_init:52] Creating list with capacity 16
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 0: 0x7f2b28001cb0
+[list_add_elem:70] Adding element 0x7f2b28001cb0 (list size now 1)
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 1: 0x7f2b28001cd0
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 2: 0x7f2b28001cf0
+[list_size:124] List size: 3
+[list_set_elem:114] Setting element 0 to 0x7f2b14000c20 (size was 3)
+[worker_thread:272] Task completed in 145 microseconds
+[list_add_elem:70] Adding element 0x561c95541e30 (list size now 1)
+[worker_thread:281] Active tasks remaining: 2
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541e70 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541b10 partition 1 (queue size now 0)
+[worker_thread:161] Task scheduled at 574206.821834359
+[list_get_elem:83] Returning element 1: (nil)
+[list_init:52] Creating list with capacity 16
+[worker_thread:165] Created new partition 0x561c95541e10 for RDD 0x561c95541b10 partition 1
+[list_set_elem:114] Setting element 1 to 0x561c95541e10 (size was 3)
+[list_get_elem:83] Returning element 1: 0x7f2b1c000b70
+[list_init:52] Creating list with capacity 16
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 0: 0x7f2b1c001cb0
+[list_add_elem:70] Adding element 0x7f2b1c001cb0 (list size now 1)
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 1: 0x7f2b1c001cd0
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 2: 0x7f2b1c001cf0
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 3: 0x7f2b1c001d10
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 4: 0x7f2b1c001d30
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 5: 0x7f2b1c001d50
+[list_add_elem:70] Adding element 0x7f2b1c001d50 (list size now 2)
+[list_size:124] List size: 7
+[list_get_elem:83] Returning element 6: 0x7f2b1c001d70
+[list_add_elem:70] Adding element 0x7f2b1c001d70 (list size now 3)
+[list_size:124] List size: 7
+[list_set_elem:114] Setting element 1 to 0x7f2b28001cf0 (size was 3)
+[worker_thread:272] Task completed in 195 microseconds
+[list_size:124] List size: 3
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541e30 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541b10 partition 0
+[print_formatted_metric:330] Writing metric to file
+[list_add_elem:70] Adding element 0x561c95541e90 (list size now 1)
+[worker_thread:281] Active tasks remaining: 1
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[list_size:124] List size: 1
+[metric_thread_func:303] Metric thread checking queue (size=1)
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541e90 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541b10 partition 1
+[print_formatted_metric:330] Writing metric to file
+[list_add_elem:70] Adding element 0x561c95541ed0 (list size now 1)
+[list_size:124] List size: 1
+[execute:465] Added task for partition 2 (queue size now 1)
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[worker_thread:147] Worker woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541ed0 (size was 1)
+[list_size:124] List size: 0
+[worker_thread:157] Worker got task for RDD 0x561c95541b10 partition 2 (queue size now 0)
+[list_size:124] List size: 3
+[execute:472] Waiting for 1 tasks to complete for RDD 0x561c95541b10
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[worker_thread:161] Task scheduled at 574206.822318409
+[list_get_elem:83] Returning element 2: (nil)
+[list_init:52] Creating list with capacity 16
+[worker_thread:165] Created new partition 0x7f2b18000b70 for RDD 0x561c95541b10 partition 2
+[list_set_elem:114] Setting element 2 to 0x7f2b18000b70 (size was 3)
+[list_get_elem:83] Returning element 2: 0x7f2b20000b70
+[list_init:52] Creating list with capacity 16
+[list_size:124] List size: 5
+[list_get_elem:83] Returning element 0: 0x7f2b20001cb0
+[list_add_elem:70] Adding element 0x7f2b20001cb0 (list size now 1)
+[list_size:124] List size: 5
+[list_get_elem:83] Returning element 1: 0x7f2b20001cd0
+[list_size:124] List size: 5
+[list_get_elem:83] Returning element 2: 0x7f2b20001cf0
+[list_size:124] List size: 5
+[list_get_elem:83] Returning element 3: 0x7f2b20001d10
+[list_size:124] List size: 5
+[list_get_elem:83] Returning element 4: 0x7f2b20001d30
+[list_size:124] List size: 5
+[list_set_elem:114] Setting element 2 to 0x7f2b18000c20 (size was 3)
+[worker_thread:272] Task completed in 211 microseconds
+[list_add_elem:70] Adding element 0x561c95541ef0 (list size now 1)
+[worker_thread:281] Active tasks remaining: 0
+[worker_thread:283] Signaling completion of all tasks
+[worker_thread:142] Worker acquired queue lock
+[list_size:124] List size: 0
+[worker_thread:145] Worker waiting for work
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 1
+[list_remove_first:97] Removing first element 0x561c95541ef0 (size was 1)
+[metric_thread_func:317] Processing metric for RDD 0x561c95541b10 partition 2
+[print_formatted_metric:330] Writing metric to file
+[list_size:124] List size: 0
+[metric_thread_func:303] Metric thread checking queue (size=0)
+[list_size:124] List size: 0
+[metric_thread_func:305] Metric thread waiting
+[execute:476] All tasks completed for RDD 0x561c95541b10
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 0: 0x7f2b14000c20
+[list_size:124] List size: 1
+[print:508] Printing partition 0 with 1 elements
+[list_size:124] List size: 1
+[list_get_elem:83] Returning element 0: 0x7f2b28001cb0
+[print:513] Printing element 0x7f2b28001cb0
+[list_size:124] List size: 1
+[list_free:133] Freeing list with 1 elements
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 1: 0x7f2b28001cf0
+[list_size:124] List size: 3
+[print:508] Printing partition 1 with 3 elements
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 0: 0x7f2b1c001cb0
+[print:513] Printing element 0x7f2b1c001cb0
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 1: 0x7f2b1c001d50
+[print:513] Printing element 0x7f2b1c001d50
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 2: 0x7f2b1c001d70
+[print:513] Printing element 0x7f2b1c001d70
+[list_size:124] List size: 3
+[list_free:133] Freeing list with 3 elements
+[list_size:124] List size: 3
+[list_get_elem:83] Returning element 2: 0x7f2b18000c20
+[list_size:124] List size: 1
+[print:508] Printing partition 2 with 1 elements
+[list_size:124] List size: 1
+[list_get_elem:83] Returning element 0: 0x7f2b20001cb0
+[print:513] Printing element 0x7f2b20001cb0
+[list_size:124] List size: 1
+[list_free:133] Freeing list with 1 elements
+[list_size:124] List size: 3
+[list_free:133] Freeing list with 3 elements
+[print:525] Finished printing RDD 0x561c95541b10
+[MS_TearDown:371] Initiating shutdown sequence
+[MS_TearDown:375] Broadcasting shutdown to workers
+[MS_TearDown:380] Signaling metric thread to shutdown
+[MS_TearDown:384] Joining worker threads
+[MS_TearDown:386] Joining worker thread 0
+[metric_thread_func:307] Metric thread woke up
+[list_size:124] List size: 0
+[metric_thread_func:311] Metric thread shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[MS_TearDown:386] Joining worker thread 1
+[MS_TearDown:386] Joining worker thread 2
+[MS_TearDown:386] Joining worker thread 3
+[MS_TearDown:386] Joining worker thread 4
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[MS_TearDown:386] Joining worker thread 5
+[worker_thread:147] Worker woke up
+[worker_thread:151] Worker shutting down
+[MS_TearDown:386] Joining worker thread 6
+[MS_TearDown:386] Joining worker thread 7
+[MS_TearDown:386] Joining worker thread 8
+[MS_TearDown:386] Joining worker thread 9
+[MS_TearDown:386] Joining worker thread 10
+[MS_TearDown:386] Joining worker thread 11
+[MS_TearDown:390] Joining metric thread
+[metric_thread_func:325] Metric thread exiting
+[MS_TearDown:393] Cleaning up resources
+[list_free:133] Freeing list with 0 elements
+[list_size:124] List size: 0
+[list_free:133] Freeing list with 0 elements
+[MS_TearDown:409] Shutdown complete
