@@ -51,6 +51,8 @@ struct RDD {
   RDD* dependencies[MAXDEPS];
   int numdependencies;
   int numpartitions;
+  int file_processing_mode;
+  char* filename;
 };
 
 struct List {

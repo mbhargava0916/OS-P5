@@ -8,7 +8,8 @@
 #include <sys/sysinfo.h>
 
 #define _GNU_SOURCE
-#define DEBUG(fmt, ...) /* fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__) */
+#define DEBUG(fmt, ...) fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__) 
+void* identity(void* arg);
 
 typedef struct {
     pthread_t* threads;
@@ -168,12 +169,62 @@ static void* worker_thread(void* arg) {
             if (task->rdd->trans == MAP) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
-                /* DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
-                      task->rdd, task->pnum, dep, dep_partition); */
+                if (dep->trans == FILE_BACKED) {
+                    //DEBUG("Processing FILE_BACKED dependency");
+                    if (!dep_partition) {
+                        DEBUG("ERROR: dep_partition is NULL");
+                        continue;
+                    }
+
+                    
+                    FILE* fp = list_get_elem(dep_partition, 0);
+                    if (!fp) {
+                        //DEBUG("ERROR: FILE* is NULL in dep_partition");
+                        continue;
+                    }
+
+                    rewind(fp);
+                    
+                    if (task->rdd->fn == (void*)identity) {
+                        //DEBUG("Processing identity mapper (line-by-line)");
+                        char* line = NULL;
+                        size_t len = 0;
+                        while (getline(&line, &len, fp) != -1) {
+                            line[strcspn(line, "\n")] = 0;
+                            void* line_copy = strdup(line);
+                            if (line_copy) list_add_elem(partition, line_copy);
+                        }
+                        free(line);
+                    } else {
+                        //DEBUG("Processing whole-file mapper");
+                        FILE* fp_copy = fdopen(dup(fileno(fp)), "r");
+                        if (!fp_copy) {
+                            DEBUG("ERROR: fdopen failed");
+                            continue;
+                        }
+                        void* mapped = ((Mapper)task->rdd->fn)(fp_copy);
+                        if (mapped) list_add_elem(partition, mapped);
+                        fclose(fp_copy);
+                    }
+                } else {
+                    // Original non-file-backed processing
+                    for (int i = 0; i < list_size(dep_partition); i++) {
+                        void* elem = list_get_elem(dep_partition, i);
+                        void* mapped = ((Mapper)task->rdd->fn)(elem);
+                        if (mapped) list_add_elem(partition, mapped);
+                    }
+                }
+            }
+
+            /*if (task->rdd->trans == MAP) {
+                RDD* dep = task->rdd->dependencies[0];
+                List* dep_partition = list_get_elem(dep->partitions, task->pnum);
+                // DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
+                      task->rdd, task->pnum, dep, dep_partition); 
                 
                 if (dep->trans == FILE_BACKED) {
                     FILE* fp = list_get_elem(dep_partition, 0);
-                    /* DEBUG("Processing FILE_BACKED partition with FILE* %p", fp); */
+                    // DEBUG("Processing FILE_BACKED partition with FILE* %p", fp); 
                     rewind(fp);
                     char* line = NULL;
                     size_t len = 0;
@@ -188,12 +239,12 @@ static void* worker_thread(void* arg) {
                         //}
                         void* line_copy = strdup(line);
                         if (line_copy) {
-                            /* DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy); */
+                            // DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy); 
                             list_add_elem(partition, line_copy);
                         }
                     }
                     free(line);
-                    /* DEBUG("Finished reading file (partition now has %d elements)", list_size(partition)); */
+                    // DEBUG("Finished reading file (partition now has %d elements)", list_size(partition)); 
                 } else {
                     // Existing map processing for non-file-backed RDDs
                     for (int i = 0; i < list_size(dep_partition); i++) {
@@ -204,7 +255,9 @@ static void* worker_thread(void* arg) {
                         }
                     }
                 }
-            }else if (task->rdd->trans == FILTER) {
+            }*/
+            
+            if (task->rdd->trans == FILTER) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
                 List* partition = list_init(16);
@@ -223,7 +276,8 @@ static void* worker_thread(void* arg) {
             
                 list_set_elem(task->rdd->partitions, task->pnum, partition);
             } 
-            else if (task->rdd->trans == JOIN) {
+            
+            if (task->rdd->trans == JOIN) {
                 RDD* left_rdd = task->rdd->dependencies[0];
                 RDD* right_rdd = task->rdd->dependencies[1];
                 /* DEBUG("Processing JOIN on RDD %p partition %d (left RDD %p, right RDD %p)", 
@@ -514,15 +568,11 @@ void print(RDD* rdd, Printer p) {
         for (int j = 0; j < list_size(partition); j++) {
             void* elem = list_get_elem(partition, j);
             if (elem) {
-                /* DEBUG("Printing element %p", elem); */
                 p(elem);
                 // Only add newline for simple string output
-                if (is_string_output) {
-                    printf("\n");
-                }
-                if(is_filter){
-                    printf("\n");
-                }
+                //if (is_string_output || is_filter) {
+                  //  printf("\n");
+                //}
                 free(elem);
             }
         }
