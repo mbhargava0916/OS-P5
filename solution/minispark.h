@@ -13,6 +13,7 @@
 
 typedef struct RDD RDD;
 typedef struct List List;
+void* identity(void* arg);
 
 typedef struct TaskMetric {
     struct timespec created;
@@ -44,7 +45,7 @@ typedef enum {
 
 struct RDD {
   Transform trans;
-  void* (*fn)(void*, void*, void*);
+  void* (*fn)(void*);
   void* ctx;
   List* partitions;
   
@@ -53,6 +54,7 @@ struct RDD {
   int numpartitions;
   int file_processing_mode;
   char* filename;
+  //int is_file_mapper; 
 };
 
 struct List {

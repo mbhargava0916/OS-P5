@@ -9,7 +9,6 @@
 
 #define _GNU_SOURCE
 #define DEBUG(fmt, ...) fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__) 
-void* identity(void* arg);
 
 typedef struct {
     pthread_t* threads;
@@ -136,183 +135,119 @@ void list_free(List* l) {
     free(l);
 }
 
+void* identity(void* arg) {
+    /* DEBUG("Identity function called with %p", arg); */
+    return arg;
+}
+
 static void* worker_thread(void* arg) {
-    /* DEBUG("Worker thread starting"); */
+    (void)arg;  // Mark arg as unused
     while (1) {
         pthread_mutex_lock(&thread_pool->queue_lock);
-        /* DEBUG("Worker acquired queue lock"); */
-        
         while (!thread_pool->shutdown && list_size(thread_pool->work_queue) == 0) {
-            /* DEBUG("Worker waiting for work"); */
             pthread_cond_wait(&thread_pool->queue_cond, &thread_pool->queue_lock);
-            /* DEBUG("Worker woke up"); */
         }
 
         if (thread_pool->shutdown) {
-            /* DEBUG("Worker shutting down"); */
             pthread_mutex_unlock(&thread_pool->queue_lock);
             pthread_exit(NULL);
         }
 
         Task* task = list_remove_first(thread_pool->work_queue);
-        /* DEBUG("Worker got task for RDD %p partition %d (queue size now %d)", task->rdd, task->pnum, list_size(thread_pool->work_queue)); */
         pthread_mutex_unlock(&thread_pool->queue_lock);
-
         clock_gettime(CLOCK_MONOTONIC, &task->metric->scheduled);
-        /* DEBUG("Task scheduled at %ld.%09ld", task->metric->scheduled.tv_sec, task->metric->scheduled.tv_nsec); */
 
         if (task->rdd && !list_get_elem(task->rdd->partitions, task->pnum)) {
             List* partition = list_init(16);
-            /* DEBUG("Created new partition %p for RDD %p partition %d", partition, task->rdd, task->pnum); */
             list_set_elem(task->rdd->partitions, task->pnum, partition);
 
             if (task->rdd->trans == MAP) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
+
                 if (dep->trans == FILE_BACKED) {
-                    //DEBUG("Processing FILE_BACKED dependency");
-                    if (!dep_partition) {
-                        DEBUG("ERROR: dep_partition is NULL");
-                        continue;
-                    }
-
+                    void* first_elem = list_get_elem(dep_partition, 0);
                     
-                    FILE* fp = list_get_elem(dep_partition, 0);
-                    if (!fp) {
-                        //DEBUG("ERROR: FILE* is NULL in dep_partition");
-                        continue;
-                    }
-
-                    rewind(fp);
-                    
-                    if (task->rdd->fn == (void*)identity) {
-                        //DEBUG("Processing identity mapper (line-by-line)");
+                    if( task->rdd->fn == (void*)GetLines) {
+                        //DEBUG("task->rdd->fn: %p, identity: %p", task->rdd->fn, (void*)identity);
+                        FILE* fp = (FILE*)first_elem;
+                        rewind(fp);
                         char* line = NULL;
                         size_t len = 0;
                         while (getline(&line, &len, fp) != -1) {
                             line[strcspn(line, "\n")] = 0;
                             void* line_copy = strdup(line);
-                            if (line_copy) list_add_elem(partition, line_copy);
+                            if (line_copy){
+                                list_add_elem(partition, line_copy);
+                            } 
                         }
                         free(line);
-                    } else {
-                        //DEBUG("Processing whole-file mapper");
+                    }else{
+                        FILE* fp = (FILE*)first_elem;
                         FILE* fp_copy = fdopen(dup(fileno(fp)), "r");
-                        if (!fp_copy) {
-                            DEBUG("ERROR: fdopen failed");
-                            continue;
-                        }
+                        if (!fp_copy) continue;
+                
                         void* mapped = ((Mapper)task->rdd->fn)(fp_copy);
                         if (mapped) list_add_elem(partition, mapped);
                         fclose(fp_copy);
                     }
                 } else {
-                    // Original non-file-backed processing
                     for (int i = 0; i < list_size(dep_partition); i++) {
                         void* elem = list_get_elem(dep_partition, i);
                         void* mapped = ((Mapper)task->rdd->fn)(elem);
                         if (mapped) list_add_elem(partition, mapped);
                     }
                 }
+            
+
+                /*for (int i = 0; i < list_size(dep_partition); i++) {
+                    void* elem = list_get_elem(dep_partition, i);
+                    void* mapped = ((Mapper)task->rdd->fn)(elem);
+                    if (mapped) list_add_elem(partition, mapped);
+                }*/
+
+
             }
 
-            /*if (task->rdd->trans == MAP) {
-                RDD* dep = task->rdd->dependencies[0];
-                List* dep_partition = list_get_elem(dep->partitions, task->pnum);
-                // DEBUG("Processing MAP on RDD %p partition %d (dep RDD %p partition %p)", 
-                      task->rdd, task->pnum, dep, dep_partition); 
-                
-                if (dep->trans == FILE_BACKED) {
-                    FILE* fp = list_get_elem(dep_partition, 0);
-                    // DEBUG("Processing FILE_BACKED partition with FILE* %p", fp); 
-                    rewind(fp);
-                    char* line = NULL;
-                    size_t len = 0;
-                    ssize_t read;
-                    
-                    while ((read = getline(&line, &len, fp)) != -1) {
-                        // Remove newline and ensure proper tab separation
-                        line[strcspn(line, "\n")] = 0;
-                        // Replace spaces with tabs to ensure consistent splitting
-                        //for (char* p = line; *p; p++) {
-                          //  if (*p == ' ') *p = '\t';
-                        //}
-                        void* line_copy = strdup(line);
-                        if (line_copy) {
-                            // DEBUG("Adding line copy %p: %s", line_copy, (char*)line_copy); 
-                            list_add_elem(partition, line_copy);
-                        }
-                    }
-                    free(line);
-                    // DEBUG("Finished reading file (partition now has %d elements)", list_size(partition)); 
-                } else {
-                    // Existing map processing for non-file-backed RDDs
-                    for (int i = 0; i < list_size(dep_partition); i++) {
-                        void* elem = list_get_elem(dep_partition, i);
-                        void* mapped = ((Mapper)task->rdd->fn)(elem);
-                        if (mapped) {
-                            list_add_elem(partition, mapped);
-                        }
-                    }
-                }
-            }*/
-            
             if (task->rdd->trans == FILTER) {
                 RDD* dep = task->rdd->dependencies[0];
                 List* dep_partition = list_get_elem(dep->partitions, task->pnum);
-                List* partition = list_init(16);
-            
+                List* filtered = list_init(16);
+
                 for (int i = 0; i < list_size(dep_partition); i++) {
                     void* elem = list_get_elem(dep_partition, i);
-            
+
                     if (task->rdd->fn == StringContains && elem != NULL) {
                         ((char*)elem)[strcspn((char*)elem, "\n")] = 0;
                     }
-            
+
                     if (((Filter)task->rdd->fn)(elem, task->rdd->ctx)) {
-                        list_add_elem(partition, elem);
+                        list_add_elem(filtered, elem);
                     }
                 }
-            
-                list_set_elem(task->rdd->partitions, task->pnum, partition);
-            } 
-            
+
+                list_set_elem(task->rdd->partitions, task->pnum, filtered);
+            }
+
             if (task->rdd->trans == JOIN) {
                 RDD* left_rdd = task->rdd->dependencies[0];
                 RDD* right_rdd = task->rdd->dependencies[1];
-                /* DEBUG("Processing JOIN on RDD %p partition %d (left RDD %p, right RDD %p)", 
-                      task->rdd, task->pnum, left_rdd, right_rdd); */
-                
+
                 List* left_partition = list_get_elem(left_rdd->partitions, task->pnum);
                 List* right_partition = list_get_elem(right_rdd->partitions, task->pnum);
-                
-                if (!left_partition || !right_partition) {
-                    /* DEBUG("ERROR: Missing input partitions for join (left: %p, right: %p)",
-                          left_partition, right_partition); */
-                    continue;
-                }
-                
-                List* output_partition = list_init(16);
-                /* DEBUG("Left partition size: %d, Right partition size: %d", 
-                      list_size(left_partition), list_size(right_partition)); */
+                if (!left_partition || !right_partition) continue;
 
+                List* output_partition = list_init(16);
                 for (int i = 0; i < list_size(left_partition); i++) {
                     void* left_row = list_get_elem(left_partition, i);
-                    /* DEBUG("Left row %d: %p", i, left_row); */
                     for (int j = 0; j < list_size(right_partition); j++) {
                         void* right_row = list_get_elem(right_partition, j);
-                        /* DEBUG("Right row %d: %p", j, right_row); */
                         void* joined = ((Joiner)task->rdd->fn)(left_row, right_row, task->rdd->ctx);
-                        /* DEBUG("Join result: %p", joined); */
-                        if (joined != NULL) {
-                            list_add_elem(output_partition, joined);
-                        }
+                        if (joined) list_add_elem(output_partition, joined);
                     }
                 }
-                
+
                 list_set_elem(task->rdd->partitions, task->pnum, output_partition);
-                
-                // Free input partitions as per project requirements
                 list_free(left_partition);
                 list_free(right_partition);
                 list_set_elem(left_rdd->partitions, task->pnum, NULL);
@@ -323,7 +258,6 @@ static void* worker_thread(void* arg) {
         struct timespec end_time;
         clock_gettime(CLOCK_MONOTONIC, &end_time);
         task->metric->duration = TIME_DIFF_MICROS(task->metric->scheduled, end_time);
-        /* DEBUG("Task completed in %ld microseconds", task->metric->duration); */
 
         pthread_mutex_lock(&metric_lock);
         list_add_elem(metric_queue, task->metric);
@@ -332,15 +266,14 @@ static void* worker_thread(void* arg) {
 
         pthread_mutex_lock(&thread_pool->active_lock);
         thread_pool->active_tasks--;
-        /* DEBUG("Active tasks remaining: %d", thread_pool->active_tasks); */
         if (thread_pool->active_tasks == 0) {
-            /* DEBUG("Signaling completion of all tasks"); */
             pthread_cond_signal(&thread_pool->active_cond);
         }
         pthread_mutex_unlock(&thread_pool->active_lock);
 
         free(task);
     }
+
     return NULL;
 }
 
@@ -570,9 +503,9 @@ void print(RDD* rdd, Printer p) {
             if (elem) {
                 p(elem);
                 // Only add newline for simple string output
-                //if (is_string_output || is_filter) {
-                  //  printf("\n");
-                //}
+                if ((is_string_output || is_filter) && (rdd->fn == (void*)GetLines)) {
+                    printf("\n");
+                }
                 free(elem);
             }
         }
@@ -629,10 +562,6 @@ RDD* join(RDD* dep1, RDD* dep2, Joiner fn, void* ctx) {
     return rdd;
 }
 
-void* identity(void* arg) {
-    /* DEBUG("Identity function called with %p", arg); */
-    return arg;
-}
 
 RDD* RDDFromFiles(char** filenames, int numfiles) {
     /* DEBUG("Creating FILE_BACKED RDD from %d files", numfiles); */
