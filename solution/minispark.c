@@ -502,11 +502,16 @@ void print(RDD* rdd, Printer p) {
             void* elem = list_get_elem(partition, j);
             if (elem) {
                 p(elem);
-                // Only add newline for simple string output
-                if ((is_string_output || is_filter) && (rdd->fn == (void*)GetLines)) {
+                if (rdd->fn == (void*)GetLines ) {
                     printf("\n");
                 }
+
+                if (is_filter) {
+                    printf("\n");
+                }
+
                 free(elem);
+
             }
         }
         list_free(partition);
