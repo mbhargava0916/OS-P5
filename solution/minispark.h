@@ -57,6 +57,26 @@ struct RDD {
   //int is_file_mapper; 
 };
 
+// Add this above your function declarations
+
+typedef struct {
+  RDD base; // base RDD info
+  int numpartitions;
+} ExtendedRDD;
+
+typedef struct {
+  Task header;
+  List* input;
+  List** outputs;
+  int num_outputs;
+  Partitioner partitioner;
+  void* ctx;
+  pthread_mutex_t* locks;
+} PartitionByTaskArg;
+
+void process_partitionby_task(void* arg);
+void thread_pool_submit(void (*func)(void*), void* arg);
+
 struct List {
   void** elements;
   int size;

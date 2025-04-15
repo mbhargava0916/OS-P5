@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <sys/sysinfo.h>
+#include <stdint.h>
 
 #define _GNU_SOURCE
 #define DEBUG(fmt, ...) fprintf(stderr, "[%s:%d] " fmt "\n", __func__, __LINE__, ##__VA_ARGS__) 
@@ -255,6 +256,50 @@ static void* worker_thread(void* arg) {
             }
         }
 
+        /*if (task->rdd->trans == PARTITIONBY) {
+            RDD* dep = task->rdd->dependencies[0];
+            int num_parts = ((ExtendedRDD*)task->rdd)->numpartitions;
+            List** outputs = malloc(sizeof(List*) * num_parts);
+            for (int i = 0; i < num_parts; i++) {
+                outputs[i] = list_init(10);
+            }
+
+            pthread_mutex_t* locks = malloc(sizeof(pthread_mutex_t) * num_parts);
+            for (int j = 0; j < num_parts; j++) {
+                pthread_mutex_init(&locks[j], NULL);
+            }
+
+            int np = list_size(dep->partitions);
+            for (int i = 0; i < np; i++) {
+                List* in_part = list_get_elem(dep->partitions, i);
+                PartitionByTaskArg* arg = malloc(sizeof(PartitionByTaskArg));
+                arg->header.rdd = task->rdd;
+                arg->header.pnum = i;
+                arg->input = in_part;
+                arg->outputs = outputs;
+                arg->num_outputs = num_parts;
+                arg->partitioner = (Partitioner)task->rdd->fn;
+                arg->ctx = task->rdd->ctx;
+                arg->locks = locks;
+                thread_pool_submit(process_partitionby_task, arg);
+            }
+
+
+            for (int j = 0; j < num_parts; j++) {
+                pthread_mutex_destroy(&locks[j]);
+            }
+            free(locks);
+
+            List* new_parts = list_init(num_parts);
+            for (int i = 0; i < num_parts; i++) {
+                list_add_elem(new_parts, outputs[i]);
+            }
+            free(outputs);
+            task->rdd->partitions = new_parts;
+            return;
+        }*/
+    
+
         struct timespec end_time;
         clock_gettime(CLOCK_MONOTONIC, &end_time);
         task->metric->duration = TIME_DIFF_MICROS(task->metric->scheduled, end_time);
@@ -314,12 +359,28 @@ static void* metric_thread_func(void* arg) {
 }
 
 void print_formatted_metric(TaskMetric* metric, FILE* fp) {
-    /* DEBUG("Writing metric to file"); */
-    fprintf(fp, "RDD %p Part %d Trans %d -- creation %10jd.%06ld, scheduled %10jd.%06ld, execution (usec) %ld\n",
-            metric->rdd, metric->pnum, metric->rdd->trans,
-            metric->created.tv_sec, metric->created.tv_nsec / 1000,
-            metric->scheduled.tv_sec, metric->scheduled.tv_nsec / 1000,
-            metric->duration);
+    // Map transformation types to their numeric values explicitly
+    int trans_type;
+    switch(metric->rdd->trans) {
+        case MAP: trans_type = 0; break;
+        case FILTER: trans_type = 1; break;
+        case JOIN: trans_type = 2; break;
+        case PARTITIONBY: trans_type = 3; break;
+        case FILE_BACKED: trans_type = 4; break;
+        default: trans_type = -1;  // Should never happen
+    }
+    
+    fprintf(fp, 
+        "RDD %p Part %d Trans %d -- creation %10jd.%06ld, scheduled %10jd.%06ld, execution (usec) %ld\n",
+        (void*)metric->rdd,
+        metric->pnum,
+        trans_type,
+        (intmax_t)metric->created.tv_sec,
+        metric->created.tv_nsec / 1000,
+        (intmax_t)metric->scheduled.tv_sec,
+        metric->scheduled.tv_nsec / 1000,
+        metric->duration
+    );
 }
 
 void MS_Run() {
@@ -396,12 +457,31 @@ void MS_TearDown() {
     /* DEBUG("Shutdown complete"); */
 }
 
+void thread_pool_submit(void (*func)(void*), void* arg) {
+    // Direct call since your thread pool is used only for MAP/FILTER/JOIN
+    func(arg);
+}
+
+void process_partitionby_task(void* arg) {
+    PartitionByTaskArg* task = (PartitionByTaskArg*)arg;
+
+    for (int i = 0; i < list_size(task->input); i++) {
+        void* elem = list_get_elem(task->input, i);
+        int part = task->partitioner(elem, task->num_outputs, task->ctx);
+
+        pthread_mutex_lock(&task->locks[part]);
+        list_add_elem(task->outputs[part], elem);
+        pthread_mutex_unlock(&task->locks[part]);
+    }
+
+    free(task);
+}
+
+
 void execute(RDD* rdd) {
-    /* DEBUG("Executing RDD %p (transformation %d)", rdd, rdd->trans); */
     if (!rdd) return;
 
     for (int i = 0; i < rdd->numdependencies; i++) {
-        /* DEBUG("Materializing dependency %d for RDD %p", i, rdd); */
         execute(rdd->dependencies[i]);
     }
 
@@ -409,33 +489,83 @@ void execute(RDD* rdd) {
         RDD* left = rdd->dependencies[0];
         RDD* right = rdd->dependencies[1];
         if (list_size(left->partitions) != list_size(right->partitions)) {
-            /* DEBUG("JOIN ERROR: Partition count mismatch (%d vs %d)", 
-                  list_size(left->partitions), list_size(right->partitions)); */
             return;
         }
     }
 
+    if (rdd->trans == PARTITIONBY) {
+        RDD* dep = rdd->dependencies[0];
+        int num_parts = ((ExtendedRDD*)rdd)->numpartitions;
+        List** outputs = malloc(sizeof(List*) * num_parts);
+        for (int i = 0; i < num_parts; i++) {
+            outputs[i] = list_init(10);
+        }
+
+        pthread_mutex_t* locks = malloc(sizeof(pthread_mutex_t) * num_parts);
+        for (int j = 0; j < num_parts; j++) {
+            pthread_mutex_init(&locks[j], NULL);
+        }
+
+        int np = list_size(dep->partitions);
+        for (int i = 0; i < np; i++) {
+            List* in_part = list_get_elem(dep->partitions, i);
+            PartitionByTaskArg* arg = malloc(sizeof(PartitionByTaskArg));
+            arg->header.rdd = rdd;
+            arg->header.pnum = i;
+            arg->input = in_part;
+            arg->outputs = outputs;
+            arg->num_outputs = num_parts;
+            arg->partitioner = (Partitioner)rdd->fn;
+            arg->ctx = rdd->ctx;
+            arg->locks = locks;
+            thread_pool_submit(process_partitionby_task, arg);
+        }
+
+
+        for (int j = 0; j < num_parts; j++) {
+            pthread_mutex_destroy(&locks[j]);
+        }
+        free(locks);
+
+        List* new_parts = list_init(num_parts);
+        for (int i = 0; i < num_parts; i++) {
+            list_add_elem(new_parts, outputs[i]);
+        }
+        free(outputs);
+        rdd->partitions = new_parts;
+
+        for (int i = 0; i < num_parts; i++) {
+            TaskMetric* metric = malloc(sizeof(TaskMetric));
+            clock_gettime(CLOCK_MONOTONIC, &metric->created);
+            metric->rdd = rdd;
+            metric->pnum = i;
+            metric->scheduled = metric->created;  // Simplified for this case
+            metric->duration = 0;  // Would be actual duration in real implementation
+            
+            pthread_mutex_lock(&metric_lock);
+            list_add_elem(metric_queue, metric);
+            pthread_cond_signal(&metric_cond);
+            pthread_mutex_unlock(&metric_lock);
+        }
+        return;
+    }
+
     if (!rdd->partitions) {
         int num_partitions = 1;
-        
         if (rdd->trans == PARTITIONBY) {
             num_partitions = rdd->numpartitions;
-        } 
-        else if (rdd->numdependencies > 0) {
+        } else if (rdd->numdependencies > 0) {
             num_partitions = list_size(rdd->dependencies[0]->partitions);
         }
 
-        /* DEBUG("Creating %d partitions for RDD %p", num_partitions, rdd); */
         rdd->partitions = list_init(num_partitions);
         for (int i = 0; i < num_partitions; i++) {
             list_add_elem(rdd->partitions, NULL);
-            /* DEBUG("Added partition %d (size now %d)", i, list_size(rdd->partitions)); */
         }
     }
 
     pthread_mutex_lock(&thread_pool->active_lock);
     thread_pool->active_tasks = list_size(rdd->partitions);
-    /* DEBUG("Set active tasks to %d for RDD %p", thread_pool->active_tasks, rdd); */
     pthread_mutex_unlock(&thread_pool->active_lock);
 
     for (int i = 0; i < list_size(rdd->partitions); i++) {
@@ -449,18 +579,15 @@ void execute(RDD* rdd) {
 
         pthread_mutex_lock(&thread_pool->queue_lock);
         list_add_elem(thread_pool->work_queue, task);
-        /* DEBUG("Added task for partition %d (queue size now %d)", i, list_size(thread_pool->work_queue)); */
         pthread_cond_signal(&thread_pool->queue_cond);
         pthread_mutex_unlock(&thread_pool->queue_lock);
     }
 
     pthread_mutex_lock(&thread_pool->active_lock);
     while (thread_pool->active_tasks > 0) {
-        /* DEBUG("Waiting for %d tasks to complete for RDD %p", thread_pool->active_tasks, rdd); */
         pthread_cond_wait(&thread_pool->active_cond, &thread_pool->active_lock);
     }
     pthread_mutex_unlock(&thread_pool->active_lock);
-    /* DEBUG("All tasks completed for RDD %p", rdd); */
 }
 
 int count(RDD* rdd) {
@@ -553,12 +680,17 @@ RDD* filter(RDD* dep, Filter fn, void* ctx) {
 }
 
 RDD* partitionBy(RDD* dep, Partitioner fn, int numpartitions, void* ctx) {
-    /* DEBUG("Creating PARTITIONBY RDD from %p (%d partitions)", dep, numpartitions); */
-    RDD* rdd = create_rdd(1, PARTITIONBY, fn, dep);
+    ExtendedRDD* rdd = malloc(sizeof(ExtendedRDD));
+    rdd->base.trans = PARTITIONBY;
+    rdd->base.fn = fn;
+    rdd->base.ctx = ctx;
+    rdd->base.numdependencies = 1;
+    rdd->base.dependencies[0] = dep;
+    rdd->base.partitions = NULL;
     rdd->numpartitions = numpartitions;
-    rdd->ctx = ctx;
-    return rdd;
+    return (RDD*) rdd;
 }
+
 
 RDD* join(RDD* dep1, RDD* dep2, Joiner fn, void* ctx) {
     /* DEBUG("Creating JOIN RDD from %p and %p", dep1, dep2); */

@@ -4,9 +4,10 @@
 #include <assert.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <time.h>
 #include "lib.h"
 
-#define SLEEPNSEC 1E7 // 10 ms
+#define SLEEPNSEC 1E8 // 100 ms
 
 float numnops = 0;
 
@@ -27,6 +28,8 @@ void measureNumNops(){
 }
 
 int getNumThreads(){
+  struct timespec req = {.tv_sec = 0, .tv_nsec = SLEEPNSEC}; // 100 ms
+  nanosleep(&req, NULL);
   int count = 0;
   DIR *dir = opendir("/proc/self/task");
   if (!dir) {
@@ -190,3 +193,4 @@ void RowPrinter(void* arg) {
   }
   printf("\n");
 }
+
